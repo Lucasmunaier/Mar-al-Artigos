@@ -3,7 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { sessionOptions } from '../../../utils/session';
 
 async function loginRoute(req: NextApiRequest, res: NextApiResponse) {
-  // Esta verificação é a correção para o erro 405
+  // A correção essencial para o erro 405 está aqui
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
@@ -12,9 +12,8 @@ async function loginRoute(req: NextApiRequest, res: NextApiResponse) {
   try {
     const { username, password } = req.body;
 
-    // Garante que as variáveis de ambiente foram carregadas
     if (!process.env.ADMIN_USER || !process.env.ADMIN_PASSWORD) {
-      console.error('Variáveis de ambiente de admin não configuradas no servidor.');
+      console.error('As variáveis de ambiente do admin não foram configuradas no servidor.');
       return res.status(500).json({ message: 'Erro de configuração do servidor.' });
     }
 
