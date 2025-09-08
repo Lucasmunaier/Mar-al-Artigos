@@ -3,11 +3,19 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import { sessionOptions } from '../../utils/session';
 
-// Cliente Admin que usa a chave secreta do servidor
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
   process.env.SUPABASE_SERVICE_KEY || ''
 );
+
+// Função para limpar o nome do ficheiro, removendo caracteres especiais
+const sanitizeFileName = (fileName: string) => {
+  return fileName
+    .normalize('NFD') // Separa acentos dos caracteres
+    .replace(/[\u0300-\u036f]/g, '') // Remove os acentos
+    .replace(/[^a-zA-Z0-9.\-_]/g, '-') // Substitui caracteres não seguros por hífens
+    .replace(/--+/g, '-'); // Remove hífens duplicados
+};
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -20,16 +28,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   try {
     const { fileName } = req.body;
-    const uniqueFileName = `${Date.now()}-${fileName}`;
+    
+    // A MUDANÇA ESTÁ AQUI: Limpamos o nome do ficheiro
+    const cleanFileName = sanitizeFileName(fileName);
+    const uniqueFileName = `${Date.now()}-${cleanFileName}`;
 
-    // Gera o URL assinado E o token de acesso
     const { data, error } = await supabaseAdmin.storage
       .from('imagens-produtos')
       .createSignedUploadUrl(uniqueFileName);
 
     if (error) throw error;
 
-    // A MUDANÇA ESTÁ AQUI: Enviamos o token e o caminho separadamente
     res.status(200).json({ token: data.token, path: data.path });
 
   } catch (error: any) {

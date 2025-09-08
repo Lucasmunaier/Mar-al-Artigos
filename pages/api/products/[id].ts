@@ -12,15 +12,20 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   // PUT: Atualizar um produto
   if (req.method === 'PUT') {
-    const { nome, descricao, preco, tamanho, imagem_url } = req.body;
-    const { data, error } = await supabase
-      .from('produtos')
-      .update({ nome, descricao, preco, tamanho, imagem_url })
-      .eq('id', id)
-      .select();
+    try {
+      // A MUDANÇA ESTÁ AQUI: Recebemos os novos campos
+      const { nome, descricao, preco, tamanhos, imagem_url, categoria_id } = req.body;
+      const { data, error } = await supabase
+        .from('produtos')
+        .update({ nome, descricao, preco, tamanhos, imagem_url, categoria_id }) // Atualiza com os novos campos
+        .eq('id', id)
+        .select();
 
-    if (error) return res.status(500).json({ error: error.message });
-    return res.status(200).json(data);
+      if (error) throw error;
+      return res.status(200).json(data);
+    } catch (error: any) {
+      return res.status(500).json({ error: error.message });
+    }
   }
 
   // DELETE: Excluir um produto
