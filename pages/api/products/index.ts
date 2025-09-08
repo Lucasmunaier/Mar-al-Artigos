@@ -10,12 +10,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(500).json({ error: 'Erro de configuração do servidor.' });
   }
 
-  // GET: Listar todos os produtos (público)
+// GET: Listar todos os produtos (público)
   if (req.method === 'GET') {
     try {
+      // Agora também pedimos o nome da categoria junto com os dados do produto
       const { data, error } = await supabase
         .from('produtos')
-        .select('*')
+        .select('*, categoria:categorias(nome)') // Pega o nome da categoria
         .order('nome', { ascending: true });
 
       if (error) throw error;
@@ -32,10 +33,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
     
     try {
-      const { nome, descricao, preco, tamanho, imagem_url } = req.body;
+      // Agora recebemos tamanhos e categoria_id
+      const { nome, descricao, preco, tamanhos, imagem_url, categoria_id } = req.body;
       const { data, error } = await supabase
         .from('produtos')
-        .insert([{ nome, descricao, preco, tamanho, imagem_url }])
+        .insert([{ nome, descricao, preco, tamanhos, imagem_url, categoria_id }]) // Novos campos
         .select();
 
       if (error) throw error;
@@ -44,6 +46,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(500).json({ error: error.message });
     }
   }
+
 
   // Rejeita qualquer outro método (aqui resolve o erro 405)
   res.setHeader('Allow', ['GET', 'POST']);
