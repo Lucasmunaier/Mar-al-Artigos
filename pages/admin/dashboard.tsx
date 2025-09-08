@@ -132,5 +132,5 @@ function AdminDashboard() {
   );
 }
 
-// Protege a rota, redirecionando para o login se não estiver autenticado
-export default withAuth(AdminDashboard);
+export { getServerSideProps } from '../../utils/withAuth';
+export default AdminDashboard;
