@@ -7,6 +7,8 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product }: ProductCardProps) => {
   const [selectedSize, setSelectedSize] = useState<string>(product.tamanhos?.[0] || '');
+  // Novo estado para controlar qual imagem está a ser mostrada
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const formattedPrice = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -21,18 +23,48 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     alert(`Produto ${product.nome} (Tamanho: ${selectedSize}) adicionado ao carrinho! (Funcionalidade a ser implementada)`);
   };
 
-  // CORREÇÃO AQUI: Define a imagem a ser usada. Se o produto não tiver imagens, usa o placeholder.
-  const imageUrl = product.imagens_url && product.imagens_url.length > 0 
-    ? product.imagens_url[0] 
-    : '/placeholder.png';
+  // Funções para navegar entre as imagens
+  const goToNextImage = () => {
+    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % product.imagens_url.length);
+  };
+
+  const goToPrevImage = () => {
+    setCurrentImageIndex((prevIndex) => (prevIndex - 1 + product.imagens_url.length) % product.imagens_url.length);
+  };
+  
+  const hasMultipleImages = product.imagens_url && product.imagens_url.length > 1;
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col transition-transform transform hover:-translate-y-2">
-      <img 
-        src={imageUrl} 
-        alt={`Imagem de ${product.nome}`} 
-        className="w-full h-56 object-cover bg-gray-200" // Adiciona um fundo cinza para o placeholder
-      />
+      {/* Secção da Imagem - agora é um mini carrossel */}
+      <div className="relative w-full h-56 bg-gray-200">
+        <img 
+          // Mostra a imagem atual baseada no índice
+          src={product.imagens_url?.[currentImageIndex] || '/placeholder.png'} 
+          alt={`Imagem de ${product.nome}`} 
+          className="w-full h-full object-cover" 
+        />
+        {/* Botões de navegação, só aparecem se houver mais de uma imagem */}
+        {hasMultipleImages && (
+          <>
+            <button 
+              onClick={goToPrevImage}
+              className="absolute top-1/2 left-2 transform -translate-y-1/2 bg-black bg-opacity-40 text-white rounded-full p-1 hover:bg-opacity-60 transition-opacity"
+              aria-label="Imagem anterior"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <button 
+              onClick={goToNextImage}
+              className="absolute top-1/2 right-2 transform -translate-y-1/2 bg-black bg-opacity-40 text-white rounded-full p-1 hover:bg-opacity-60 transition-opacity"
+              aria-label="Próxima imagem"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            </button>
+          </>
+        )}
+      </div>
+      
       <div className="p-4 flex flex-col flex-grow">
         <span className="text-xs font-semibold text-indigo-600 uppercase mb-1">
           {product.categorias?.[0]?.nome || 'Sem Categoria'}
