@@ -1,8 +1,8 @@
 import { withIronSessionApiRoute } from 'iron-session/next';
 import { NextApiRequest, NextApiResponse } from 'next';
-// Caminhos corrigidos de '../../../' para '../../'
-import { supabase } from '../../utils/supabaseClient'; 
-import { sessionOptions } from '../../utils/session';
+// Caminhos corrigidos de '../../' para '../../../'
+import { supabase } from '../../../utils/supabaseClient'; 
+import { sessionOptions } from '../../../utils/session';
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
