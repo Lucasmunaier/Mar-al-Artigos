@@ -21,13 +21,27 @@ interface HomePageProps {
   featuredProducts: Product[];
 }
 
+// Componente do Carrossel (agora mais seguro)
 const HeroCarousel = ({ products }: { products: Product[] }) => {
-  if (!products || products.length === 0) return null;
+  // Filtra a lista para incluir apenas produtos que tenham imagens.
+  const productsWithImages = products.filter(p => p.imagens_url && p.imagens_url.length > 0);
+
+  if (productsWithImages.length === 0) {
+    // Se nenhum produto tiver imagem, mostra um banner estático.
+    return (
+      <div className="relative h-72 md:h-[60vh] bg-gray-800 flex items-center justify-center text-white text-center p-4">
+        <div>
+          <h1 className="text-4xl md:text-6xl font-bold mb-4">Marçal Artigos Militares</h1>
+          <p className="text-lg md:text-xl">Equipamentos e artigos de alta performance.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div id="default-carousel" className="relative w-full" data-carousel="slide">
       <div className="relative h-72 overflow-hidden rounded-lg md:h-[60vh]">
-        {products.map((product, index) => (
+        {productsWithImages.map((product) => (
           <div key={product.id} className="hidden duration-700 ease-in-out" data-carousel-item>
             <img 
               src={product.imagens_url[0]} 
@@ -38,7 +52,7 @@ const HeroCarousel = ({ products }: { products: Product[] }) => {
         ))}
       </div>
       <div className="absolute z-30 flex -translate-x-1/2 bottom-5 left-1/2 space-x-3 rtl:space-x-reverse">
-        {products.map((_, index) => (
+        {productsWithImages.map((_, index) => (
             <button key={index} type="button" className="w-3 h-3 rounded-full" aria-current="true" aria-label={`Slide ${index + 1}`} data-carousel-slide-to={index}></button>
         ))}
       </div>

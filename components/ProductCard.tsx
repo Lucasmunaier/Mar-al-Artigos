@@ -21,13 +21,17 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     alert(`Produto ${product.nome} (Tamanho: ${selectedSize}) adicionado ao carrinho! (Funcionalidade a ser implementada)`);
   };
 
+  // CORREÇÃO AQUI: Define a imagem a ser usada. Se o produto não tiver imagens, usa o placeholder.
+  const imageUrl = product.imagens_url && product.imagens_url.length > 0 
+    ? product.imagens_url[0] 
+    : '/placeholder.png';
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col transition-transform transform hover:-translate-y-2">
-      {/* CORREÇÃO AQUI: Usa a primeira imagem da lista 'imagens_url' */}
       <img 
-        src={product.imagens_url?.[0]} 
+        src={imageUrl} 
         alt={`Imagem de ${product.nome}`} 
-        className="w-full h-56 object-cover" 
+        className="w-full h-56 object-cover bg-gray-200" // Adiciona um fundo cinza para o placeholder
       />
       <div className="p-4 flex flex-col flex-grow">
         <span className="text-xs font-semibold text-indigo-600 uppercase mb-1">
