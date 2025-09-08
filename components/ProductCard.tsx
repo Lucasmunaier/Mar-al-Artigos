@@ -3,8 +3,6 @@ import type { Product } from '../types';
 
 interface ProductCardProps {
   product: Product;
-  // Futuramente, receberá a função para adicionar ao carrinho
-  // onAddToCart: (product: Product, size: string) => void; 
 }
 
 export const ProductCard = ({ product }: ProductCardProps) => {
@@ -15,14 +13,11 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     currency: 'BRL',
   }).format(product.preco);
   
-  // A lógica do WhatsApp será movida para o carrinho de compras,
-  // mas vamos manter o botão desativado por enquanto.
   const handleAddToCart = () => {
     if (!selectedSize) {
       alert('Por favor, selecione um tamanho.');
       return;
     }
-    // Lógica para adicionar ao carrinho virá na Parte 3
     alert(`Produto ${product.nome} (Tamanho: ${selectedSize}) adicionado ao carrinho! (Funcionalidade a ser implementada)`);
   };
 
@@ -31,7 +26,8 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       <img src={product.imagem_url} alt={`Imagem de ${product.nome}`} className="w-full h-56 object-cover" />
       <div className="p-4 flex flex-col flex-grow">
         <span className="text-xs font-semibold text-indigo-600 uppercase mb-1">
-          {product.categoria?.nome || 'Sem Categoria'}
+          {/* Correção aqui: lê a primeira categoria da lista */}
+          {product.categorias?.[0]?.nome || 'Sem Categoria'}
         </span>
         <h3 className="text-xl font-bold mb-2">{product.nome}</h3>
         <p className="text-gray-600 text-sm mb-4 flex-grow">{product.descricao}</p>

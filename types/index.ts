@@ -8,11 +8,8 @@ export interface Product {
   nome: string;
   descricao: string;
   preco: number;
-  tamanhos: string[]; // Alterado de tamanho para tamanhos (array)
+  tamanhos: string[];
   imagem_url: string;
-  categoria_id: string;
-  // Este campo virá da nossa consulta à API
-  categoria?: {
-    nome: string;
-  };
+  // Um produto agora tem uma LISTA de categorias
+  categorias: Category[];
 }

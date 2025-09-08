@@ -1,22 +1,13 @@
-import { withIronSessionApiRoute } from 'iron-session/next';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '../../../utils/supabaseClient';
-import { sessionOptions } from '../../../utils/session';
+// Caminho corrigido aqui
+import { supabase } from '../../utils/supabaseClient';
 
-async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Garante que as chaves do Supabase estão disponíveis no servidor
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    console.error('As variáveis de ambiente do Supabase não estão configuradas na Vercel.');
-    return res.status(500).json({ error: 'Erro de configuração do servidor.' });
-  }
-
-// GET: Listar todos os produtos (público)
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     try {
-      // Agora também pedimos o nome da categoria junto com os dados do produto
       const { data, error } = await supabase
         .from('produtos')
-        .select('*, categoria:categorias(nome)') // Pega o nome da categoria
+        .select('*, categorias (id, nome)')
         .order('nome', { ascending: true });
 
       if (error) throw error;
@@ -26,31 +17,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   }
 
-  // POST: Criar um novo produto (protegido)
-  if (req.method === 'POST') {
-    if (!req.session.user) {
-        return res.status(401).json({ message: 'Não autorizado' });
-    }
-    
-    try {
-      // Agora recebemos tamanhos e categoria_id
-      const { nome, descricao, preco, tamanhos, imagem_url, categoria_id } = req.body;
-      const { data, error } = await supabase
-        .from('produtos')
-        .insert([{ nome, descricao, preco, tamanhos, imagem_url, categoria_id }]) // Novos campos
-        .select();
-
-      if (error) throw error;
-      return res.status(201).json(data);
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
-    }
-  }
-
-
-  // Rejeita qualquer outro método (aqui resolve o erro 405)
-  res.setHeader('Allow', ['GET', 'POST']);
+  res.setHeader('Allow', ['GET']);
   res.status(405).end(`Method ${req.method} Not Allowed`);
 }
-
-export default withIronSessionApiRoute(handler, sessionOptions);
