@@ -1,6 +1,7 @@
 import { withIronSessionApiRoute } from 'iron-session/next';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '../../../utils/supabaseClient';
+// Caminhos corrigidos de '../../' para '../../../'
+import { supabase } from '../../../utils/supabaseClient'; 
 import { sessionOptions } from '../../../utils/session';
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -13,14 +14,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   const { productData, selectedCategories, isEditing } = req.body;
-  // A propriedade 'id' é separada dos outros dados do produto
   const { id, ...dataToSave } = productData;
 
   try {
     let savedProduct;
 
     if (isEditing) {
-      // Atualiza um produto existente
+      // Atualiza os dados do produto
       const { data, error } = await supabase
         .from('produtos')
         .update(dataToSave)
@@ -30,7 +30,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       if (error) throw error;
       savedProduct = data;
     } else {
-      // Insere um novo produto
+      // Insere o novo produto
       const { data, error } = await supabase
         .from('produtos')
         .insert(dataToSave)
@@ -40,18 +40,20 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       savedProduct = data;
     }
 
-    // Atualiza as categorias do produto
+    // Apaga todas as ligações de categorias existentes para este produto
     const { error: deleteError } = await supabase
       .from('produtos_categorias')
       .delete()
       .eq('produto_id', savedProduct.id);
     if (deleteError) throw deleteError;
     
+    // Insere as novas ligações de categorias, se existirem
     if (selectedCategories && selectedCategories.length > 0) {
       const categoryLinks = selectedCategories.map((catId: string) => ({
         produto_id: savedProduct.id,
         categoria_id: catId,
       }));
+
       const { error: insertError } = await supabase
         .from('produtos_categorias')
         .insert(categoryLinks);
