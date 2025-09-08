@@ -4,9 +4,10 @@ import { supabase } from '../../../utils/supabaseClient';
 import { sessionOptions } from '../../../utils/session';
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Garante que as chaves do Supabase estão disponíveis
+  // Garante que as chaves do Supabase estão disponíveis no servidor
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    return res.status(500).json({ error: 'As variáveis de ambiente do Supabase não estão configuradas.' });
+    console.error('As variáveis de ambiente do Supabase não estão configuradas na Vercel.');
+    return res.status(500).json({ error: 'Erro de configuração do servidor.' });
   }
 
   // GET: Listar todos os produtos (público)
@@ -26,7 +27,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   // POST: Criar um novo produto (protegido)
   if (req.method === 'POST') {
-    // Verifica se o utilizador tem login
     if (!req.session.user) {
         return res.status(401).json({ message: 'Não autorizado' });
     }
@@ -45,7 +45,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   }
 
-  // Se o método não for GET ou POST, rejeita
+  // Rejeita qualquer outro método (aqui resolve o erro 405)
   res.setHeader('Allow', ['GET', 'POST']);
   res.status(405).end(`Method ${req.method} Not Allowed`);
 }
