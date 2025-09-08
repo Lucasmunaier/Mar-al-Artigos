@@ -77,25 +77,27 @@ function AdminDashboard() {
   };
 
   // Salva um produto (cria um novo ou edita um existente)
-  const handleSaveProduct = async (event: FormEvent<HTMLFormElement>) => {
+const handleSaveProduct = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setUploading(true);
 
     const formData = new FormData(event.currentTarget);
     let imageUrl = editingProduct?.imagem_url || '';
 
-    // 1. Se um novo ficheiro de imagem foi selecionado, faz o upload
     if (selectedFile) {
+      // Pede o token e o caminho à nossa API
       const urlResponse = await fetch('/api/upload-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: selectedFile.name, fileType: selectedFile.type }),
+        body: JSON.stringify({ fileName: selectedFile.name }),
       });
-      const { uploadUrl, publicUrl } = await urlResponse.json();
+      // A MUDANÇA ESTÁ AQUI: Recebemos token e path
+      const { token, path } = await urlResponse.json();
 
+      // E AQUI: Usamos o token e o path para fazer o upload
       const { error: uploadError } = await supabase.storage
         .from('imagens-produtos')
-        .uploadToSignedUrl(publicUrl, uploadUrl, selectedFile);
+        .uploadToSignedUrl(path, token, selectedFile); // Corrigido!
       
       if (uploadError) {
         alert('Erro ao fazer upload da imagem.');
@@ -104,7 +106,7 @@ function AdminDashboard() {
         return;
       }
       
-      const { data } = supabase.storage.from('imagens-produtos').getPublicUrl(publicUrl);
+      const { data } = supabase.storage.from('imagens-produtos').getPublicUrl(path);
       imageUrl = data.publicUrl;
     }
     
