@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 // Caminho corrigido aqui
-import { supabase } from '../../utils/supabaseClient';
+import { supabase } from '../../../utils/supabaseClient';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
