@@ -1,17 +1,30 @@
-import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
+import { useState, useEffect, FormEvent, ChangeEvent, useRef } from 'react';
 import type { Product, Category } from '../../types';
 import { getServerSideProps } from '../../utils/withAuth';
 import { supabase } from '../../utils/supabaseClient';
 
+// Importações da biblioteca de recorte
+import ReactCrop, { type Crop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
+
 function AdminDashboard() {
+  // Estados para dados
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  
+  // Estados para UI
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+
+  // Novos estados para o sistema de recorte
+  const [sourceFiles, setSourceFiles] = useState<File[]>([]);
+  const [croppedImageBlobs, setCroppedImageBlobs] = useState<Map<string, Blob>>(new Map());
+  const [croppingImage, setCroppingImage] = useState<{ file: File, src: string } | null>(null);
+  const [crop, setCrop] = useState<Crop>();
+  const imgRef = useRef<HTMLImageElement>(null);
 
   const fetchData = async () => {
     const productsResponse = await fetch('/api/products');
@@ -25,7 +38,7 @@ function AdminDashboard() {
   useEffect(() => {
     fetchData();
   }, []);
-
+  
   const handleCategoryChange = (categoryId: string) => {
     const newSelection = new Set(selectedCategories);
     newSelection.has(categoryId) ? newSelection.delete(categoryId) : newSelection.add(categoryId);
@@ -34,7 +47,8 @@ function AdminDashboard() {
 
   const openModal = (product: Product | null = null) => {
     setEditingProduct(product);
-    setSelectedFiles([]);
+    setSourceFiles([]);
+    setCroppedImageBlobs(new Map());
     if (product) {
       setSelectedCategories(new Set(product.categorias.map(c => c.id)));
     } else {
@@ -46,14 +60,16 @@ function AdminDashboard() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingProduct(null);
-    setSelectedFiles([]);
+    setSourceFiles([]);
+    setCroppedImageBlobs(new Map());
     setSelectedCategories(new Set());
   };
   
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (files) {
-      setSelectedFiles(Array.from(files));
+    if (files && files.length > 0) {
+      setSourceFiles(Array.from(files));
+      setCroppedImageBlobs(new Map());
     }
   };
 
@@ -74,6 +90,42 @@ function AdminDashboard() {
       fetchData();
     }
   };
+  
+  const handleApplyCrop = async () => {
+    if (!croppingImage || !imgRef.current || !crop || !crop.width || !crop.height) {
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
+    const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
+    canvas.width = crop.width;
+    canvas.height = crop.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.drawImage(
+      imgRef.current,
+      crop.x * scaleX,
+      crop.y * scaleY,
+      crop.width * scaleX,
+      crop.height * scaleY,
+      0,
+      0,
+      crop.width,
+      crop.height
+    );
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const newCroppedBlobs = new Map(croppedImageBlobs);
+        newCroppedBlobs.set(croppingImage.file.name, blob);
+        setCroppedImageBlobs(newCroppedBlobs);
+      }
+      setCroppingImage(null);
+    }, 'image/jpeg', 0.95);
+  };
+
 
   const handleSaveProduct = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -82,21 +134,26 @@ function AdminDashboard() {
     const formData = new FormData(event.currentTarget);
     let imageUrls = editingProduct?.imagens_url || [];
 
-    if (selectedFiles.length > 0) {
+    if (sourceFiles.length > 0) {
       imageUrls = [];
-      for (const file of selectedFiles) {
+      for (const file of sourceFiles) {
+        const blobToUpload = croppedImageBlobs.get(file.name) || file;
+        const fileToUpload = new File([blobToUpload], file.name, { type: blobToUpload.type });
+
         const urlResponse = await fetch('/api/upload-url', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileName: file.name }),
+          body: JSON.stringify({ fileName: fileToUpload.name }),
         });
+        
         const { token, path } = await urlResponse.json();
-        const { error: uploadError } = await supabase.storage.from('imagens-produtos').uploadToSignedUrl(path, token, file);
+        const { error: uploadError } = await supabase.storage.from('imagens-produtos').uploadToSignedUrl(path, token, fileToUpload);
+
         if (uploadError) {
           alert(`Erro ao fazer upload da imagem: ${file.name}`);
-          setUploading(false);
-          return;
+          setUploading(false); return;
         }
+        
         const { data } = supabase.storage.from('imagens-produtos').getPublicUrl(path);
         imageUrls.push(data.publicUrl);
       }
@@ -129,6 +186,7 @@ function AdminDashboard() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Tabela de Produtos */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Gerir Produtos</h1>
         <button onClick={() => openModal()} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">
@@ -172,6 +230,7 @@ function AdminDashboard() {
         </table>
       </div>
       
+      {/* Gestão de Categorias */}
       <div className="mt-16 bg-white shadow-md rounded p-6">
         <h2 className="text-xl font-bold mb-4">Gerir Categorias</h2>
         <div className="flex items-center gap-4">
@@ -188,12 +247,12 @@ function AdminDashboard() {
         </div>
       </div>
 
+      {/* Modal para Adicionar/Editar Produto */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
           <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md max-h-full overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">{editingProduct ? 'Editar' : 'Adicionar'} Produto</h2>
             <form onSubmit={handleSaveProduct}>
-              {/* CAMPOS DO FORMULÁRIO QUE ESTAVAM EM FALTA ESTÃO AGORA AQUI */}
               <div className="mb-4">
                 <label htmlFor="nome" className="block text-sm font-medium text-gray-700">Nome</label>
                 <input type="text" name="nome" id="nome" defaultValue={editingProduct?.nome} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
@@ -224,22 +283,42 @@ function AdminDashboard() {
               <div className="mb-4">
                 <label htmlFor="imagem" className="block text-sm font-medium text-gray-700">Imagens do Produto</label>
                 <input type="file" name="imagem" id="imagem" accept="image/*" multiple onChange={handleFileChange} className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" />
-                <div className="mt-4 flex flex-wrap gap-2">
-                    {selectedFiles.length > 0 ? selectedFiles.map((file, i) => (
-                        <img key={i} src={URL.createObjectURL(file)} alt="Pré-visualização" className="w-20 h-20 object-cover rounded-md"/>
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                    {sourceFiles.length > 0 ? sourceFiles.map((file, i) => (
+                        <div key={i} className="relative">
+                            <img 
+                                src={croppedImageBlobs.has(file.name) ? URL.createObjectURL(croppedImageBlobs.get(file.name)!) : URL.createObjectURL(file)} 
+                                alt="Pré-visualização" 
+                                className="w-full h-24 object-cover rounded-md"
+                            />
+                            <button type="button" onClick={() => setCroppingImage({ file, src: URL.createObjectURL(file) })} className="absolute top-1 right-1 bg-blue-500 text-white rounded-full p-1 text-xs">Recortar</button>
+                        </div>
                     )) : editingProduct?.imagens_url?.map((url, i) => (
-                        <img key={i} src={url} alt="Imagem atual" className="w-20 h-20 object-cover rounded-md"/>
+                        <img key={i} src={url} alt="Imagem atual" className="w-full h-24 object-cover rounded-md"/>
                     ))}
                 </div>
               </div>
-              {/* FIM DOS CAMPOS DO FORMULÁRIO */}
-
               <div className="flex justify-end space-x-4 mt-6">
                 <button type="button" onClick={closeModal} className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400">Cancelar</button>
                 <button type="submit" disabled={uploading} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300">{uploading ? 'A guardar...' : 'Salvar'}</button>
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Modal de Recorte de Imagem */}
+      {croppingImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-[60] flex justify-center items-center p-4">
+            <div className='bg-white p-4 rounded-lg'>
+                <ReactCrop crop={crop} onChange={c => setCrop(c)} aspect={1}>
+                    <img ref={imgRef} src={croppingImage.src} style={{ maxHeight: '70vh' }}/>
+                </ReactCrop>
+                <div className="flex justify-end gap-4 mt-4">
+                    <button type="button" onClick={() => setCroppingImage(null)} className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md">Cancelar</button>
+                    <button type="button" onClick={handleApplyCrop} className="px-4 py-2 bg-green-600 text-white rounded-md">Aplicar Recorte</button>
+                </div>
+            </div>
         </div>
       )}
     </div>
