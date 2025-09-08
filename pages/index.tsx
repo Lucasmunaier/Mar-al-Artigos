@@ -27,7 +27,7 @@ export default function HomePage({ featuredProducts }: HomePageProps) {
   return (
     <>
       {/* 1. Banner Principal (Hero Section) */}
-      <section className="relative h-[60vh] bg-cover bg-center flex items-center justify-center text-white" style={{ backgroundImage: "url('/banner-principal.jpg')" }}>
+      <section className="relative h-[60vh] bg-cover bg-center flex items-center justify-center text-white" style={{ backgroundImage: "url('/banner-principal.png')" }}>
         {/* Overlay escuro para melhorar a legibilidade do texto */}
         <div className="absolute inset-0 bg-black opacity-50"></div>
         <div className="relative z-10 text-center p-4">
