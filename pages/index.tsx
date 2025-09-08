@@ -1,93 +1,94 @@
 import Link from 'next/link';
-import type { Product } from '../types';
+import type { Product, Category } from '../types';
 import { supabase } from '../utils/supabaseClient';
 import { ProductCard } from '../components/ProductCard';
 
+// Tipagem para incluir a nova imagem da categoria
+interface CategoryWithImage extends Category {
+  imagem_url: string;
+}
+
 export async function getServerSideProps() {
+  // Busca os 8 produtos mais recentes para os destaques
   const { data: products } = await supabase
     .from('produtos')
     .select('*, categorias(id, nome)')
     .order('created_at', { ascending: false })
     .limit(8);
 
+  // Busca as categorias para a nova secção
+  const { data: categories } = await supabase.from('categorias').select('*');
+
   return {
     props: {
       featuredProducts: products || [],
+      categories: categories || [],
     },
   };
 }
 
 interface HomePageProps {
   featuredProducts: Product[];
+  categories: CategoryWithImage[];
 }
 
-// Componente do Carrossel (agora mais seguro)
-const HeroCarousel = ({ products }: { products: Product[] }) => {
-  // Filtra a lista para incluir apenas produtos que tenham imagens.
-  const productsWithImages = products.filter(p => p.imagens_url && p.imagens_url.length > 0);
-
-  if (productsWithImages.length === 0) {
-    // Se nenhum produto tiver imagem, mostra um banner estático.
-    return (
-      <div className="relative h-72 md:h-[60vh] bg-gray-800 flex items-center justify-center text-white text-center p-4">
-        <div>
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">Marçal Artigos Militares</h1>
-          <p className="text-lg md:text-xl">Equipamentos e artigos de alta performance.</p>
+export default function HomePage({ featuredProducts, categories }: HomePageProps) {
+  return (
+    <div className="bg-gray-50">
+      {/* 1. Novo Banner Principal Fixo */}
+      <section 
+        className="relative h-[50vh] md:h-[70vh] bg-cover bg-center flex items-center justify-center text-white" 
+        style={{ backgroundImage: "url('/banner-principal.jpg')" }}
+      >
+        <div className="absolute inset-0 bg-black opacity-60"></div>
+        <div className="relative z-10 text-center p-4">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4">Marçal Artigos Militares</h1>
+          <p className="text-lg md:text-xl mb-8 max-w-2xl mx-auto">Equipamentos e artigos táticos de alta performance para a sua missão.</p>
+          <Link href="/products" legacyBehavior>
+            <a className="bg-green-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-700 transition-transform transform hover:scale-105 shadow-lg">
+              Explorar Produtos
+            </a>
+          </Link>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div id="default-carousel" className="relative w-full" data-carousel="slide">
-      <div className="relative h-72 overflow-hidden rounded-lg md:h-[60vh]">
-        {productsWithImages.map((product) => (
-          <div key={product.id} className="hidden duration-700 ease-in-out" data-carousel-item>
-            <img 
-              src={product.imagens_url[0]} 
-              className="absolute block w-full h-full object-cover top-0 left-0" 
-              alt={product.nome}
-            />
-          </div>
-        ))}
-      </div>
-      <div className="absolute z-30 flex -translate-x-1/2 bottom-5 left-1/2 space-x-3 rtl:space-x-reverse">
-        {productsWithImages.map((_, index) => (
-            <button key={index} type="button" className="w-3 h-3 rounded-full" aria-current="true" aria-label={`Slide ${index + 1}`} data-carousel-slide-to={index}></button>
-        ))}
-      </div>
-      <button type="button" className="absolute top-0 start-0 z-30 flex items-center justify-center h-full px-4 cursor-pointer group focus:outline-none" data-carousel-prev>
-        <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/30 group-hover:bg-white/50 focus:ring-4 focus:ring-white">
-            <svg className="w-4 h-4 text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 1 1 5l4 4"/></svg>
-        </span>
-      </button>
-      <button type="button" className="absolute top-0 end-0 z-30 flex items-center justify-center h-full px-4 cursor-pointer group focus:outline-none" data-carousel-next>
-         <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/30 group-hover:bg-white/50 focus:ring-4 focus:ring-white">
-            <svg className="w-4 h-4 text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 9 4-4-4-4"/></svg>
-        </span>
-      </button>
-    </div>
-  );
-}
-
-
-export default function HomePage({ featuredProducts }: HomePageProps) {
-  return (
-    <>
-      <HeroCarousel products={featuredProducts} />
-
-      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h2 className="text-3xl font-bold text-center mb-8">Produtos em Destaque</h2>
-        {featuredProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-gray-600">Nenhum produto em destaque no momento.</p>
-        )}
       </section>
-    </>
+
+      {/* 2. Nova Secção de Categorias */}
+      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <h2 className="text-3xl font-bold text-center mb-2">Navegue por Categorias</h2>
+        <p className="text-center text-gray-600 mb-8">Encontre exatamente o que você precisa.</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+          {categories.map((category) => (
+            <Link key={category.id} href={`/products?category=${category.id}`} legacyBehavior>
+              <a className="relative rounded-lg overflow-hidden group h-48">
+                <img 
+                  src={category.imagem_url || '/placeholder.png'} 
+                  alt={category.nome} 
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                  <h3 className="text-white text-xl font-bold">{category.nome}</h3>
+                </div>
+              </a>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* 3. Secção de Produtos em Destaque Melhorada */}
+      <section className="bg-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <h2 className="text-3xl font-bold text-center mb-8">Nossos Destaques</h2>
+          {featuredProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {featuredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-gray-600">Nenhum produto em destaque no momento.</p>
+          )}
+        </div>
+      </section>
+    </div>
   );
 }
