@@ -3,14 +3,12 @@ import type { Product } from '../types';
 import { supabase } from '../utils/supabaseClient';
 import { ProductCard } from '../components/ProductCard';
 
-// Busca os produtos no servidor antes de a página carregar
 export async function getServerSideProps() {
-  // Vamos buscar os 8 produtos mais recentes para usar como destaque
   const { data: products } = await supabase
     .from('produtos')
     .select('*, categorias(id, nome)')
-    .order('created_at', { ascending: false }) // Ordena pelos mais recentes
-    .limit(8); // Limita a 8 produtos
+    .order('created_at', { ascending: false })
+    .limit(8);
 
   return {
     props: {
@@ -23,25 +21,47 @@ interface HomePageProps {
   featuredProducts: Product[];
 }
 
+const HeroCarousel = ({ products }: { products: Product[] }) => {
+  if (!products || products.length === 0) return null;
+
+  return (
+    <div id="default-carousel" className="relative w-full" data-carousel="slide">
+      <div className="relative h-72 overflow-hidden rounded-lg md:h-[60vh]">
+        {products.map((product, index) => (
+          <div key={product.id} className="hidden duration-700 ease-in-out" data-carousel-item>
+            <img 
+              src={product.imagens_url[0]} 
+              className="absolute block w-full h-full object-cover top-0 left-0" 
+              alt={product.nome}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="absolute z-30 flex -translate-x-1/2 bottom-5 left-1/2 space-x-3 rtl:space-x-reverse">
+        {products.map((_, index) => (
+            <button key={index} type="button" className="w-3 h-3 rounded-full" aria-current="true" aria-label={`Slide ${index + 1}`} data-carousel-slide-to={index}></button>
+        ))}
+      </div>
+      <button type="button" className="absolute top-0 start-0 z-30 flex items-center justify-center h-full px-4 cursor-pointer group focus:outline-none" data-carousel-prev>
+        <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/30 group-hover:bg-white/50 focus:ring-4 focus:ring-white">
+            <svg className="w-4 h-4 text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 1 1 5l4 4"/></svg>
+        </span>
+      </button>
+      <button type="button" className="absolute top-0 end-0 z-30 flex items-center justify-center h-full px-4 cursor-pointer group focus:outline-none" data-carousel-next>
+         <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/30 group-hover:bg-white/50 focus:ring-4 focus:ring-white">
+            <svg className="w-4 h-4 text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 9 4-4-4-4"/></svg>
+        </span>
+      </button>
+    </div>
+  );
+}
+
+
 export default function HomePage({ featuredProducts }: HomePageProps) {
   return (
     <>
-      {/* 1. Banner Principal (Hero Section) */}
-      <section className="relative h-[60vh] bg-cover bg-center flex items-center justify-center text-white" style={{ backgroundImage: "url('/banner-principal.png')" }}>
-        {/* Overlay escuro para melhorar a legibilidade do texto */}
-        <div className="absolute inset-0 bg-black opacity-50"></div>
-        <div className="relative z-10 text-center p-4">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">TÁTICO STORE</h1>
-          <p className="text-lg md:text-xl mb-8">Equipamentos e artigos militares de alta performance.</p>
-          <Link href="/products" legacyBehavior>
-            <a className="bg-green-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-700 transition-transform transform hover:scale-105 shadow-lg">
-              Ver Todos os Produtos
-            </a>
-          </Link>
-        </div>
-      </section>
+      <HeroCarousel products={featuredProducts} />
 
-      {/* 2. Secção de Produtos em Destaque */}
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h2 className="text-3xl font-bold text-center mb-8">Produtos em Destaque</h2>
         {featuredProducts.length > 0 ? (

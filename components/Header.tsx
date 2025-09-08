@@ -5,7 +5,6 @@ export const Header = () => {
   const router = useRouter();
   const isAdminPage = router.pathname.startsWith('/admin');
 
-  // Não renderiza o header na página de login do admin
   if (isAdminPage && router.pathname.endsWith('index')) {
     return null;
   }
@@ -14,8 +13,9 @@ export const Header = () => {
     <header className="bg-gray-800 text-white shadow-md sticky top-0 z-10">
       <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
         <Link href="/" legacyBehavior>
+          {/* NOME ALTERADO AQUI */}
           <a className="text-xl font-bold hover:text-green-400 transition-colors">
-            TÁTICO STORE
+            Marçal Artigos Militares
           </a>
         </Link>
         

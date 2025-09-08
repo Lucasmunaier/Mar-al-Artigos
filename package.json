@@ -11,6 +11,8 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
     "cookie": "^0.6.0",
+    "flowbite": "^3.1.2",
+    "flowbite-react": "^0.12.9",
     "iron-session": "^6.3.1",
     "next": "14.0.4",
     "react": "^18",

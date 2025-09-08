@@ -9,7 +9,7 @@ export interface Product {
   descricao: string;
   preco: number;
   tamanhos: string[];
-  imagem_url: string;
-  // Um produto agora tem uma LISTA de categorias
+  // Alteração aqui: de uma imagem para várias
+  imagens_url: string[]; 
   categorias: Category[];
 }

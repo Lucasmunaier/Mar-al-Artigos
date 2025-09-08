@@ -23,10 +23,14 @@ export const ProductCard = ({ product }: ProductCardProps) => {
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col transition-transform transform hover:-translate-y-2">
-      <img src={product.imagem_url} alt={`Imagem de ${product.nome}`} className="w-full h-56 object-cover" />
+      {/* CORREÇÃO AQUI: Usa a primeira imagem da lista 'imagens_url' */}
+      <img 
+        src={product.imagens_url?.[0]} 
+        alt={`Imagem de ${product.nome}`} 
+        className="w-full h-56 object-cover" 
+      />
       <div className="p-4 flex flex-col flex-grow">
         <span className="text-xs font-semibold text-indigo-600 uppercase mb-1">
-          {/* Correção aqui: lê a primeira categoria da lista */}
           {product.categorias?.[0]?.nome || 'Sem Categoria'}
         </span>
         <h3 className="text-xl font-bold mb-2">{product.nome}</h3>
