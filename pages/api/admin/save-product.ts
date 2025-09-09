@@ -1,7 +1,6 @@
 import { withIronSessionApiRoute } from 'iron-session/next';
 import { NextApiRequest, NextApiResponse } from 'next';
-// Caminhos corrigidos de '../../' para '../../../'
-import { supabase } from '../../../utils/supabaseClient'; 
+import { supabase } from '../../../utils/supabaseClient';
 import { sessionOptions } from '../../../utils/session';
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -20,43 +19,23 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     let savedProduct;
 
     if (isEditing) {
-      // Atualiza os dados do produto
-      const { data, error } = await supabase
-        .from('produtos')
-        .update(dataToSave)
-        .eq('id', id)
-        .select()
-        .single();
+      const { data, error } = await supabase.from('produtos').update(dataToSave).eq('id', id).select().single();
       if (error) throw error;
       savedProduct = data;
     } else {
-      // Insere o novo produto
-      const { data, error } = await supabase
-        .from('produtos')
-        .insert(dataToSave)
-        .select()
-        .single();
+      const { data, error } = await supabase.from('produtos').insert(dataToSave).select().single();
       if (error) throw error;
       savedProduct = data;
     }
 
-    // Apaga todas as ligações de categorias existentes para este produto
-    const { error: deleteError } = await supabase
-      .from('produtos_categorias')
-      .delete()
-      .eq('produto_id', savedProduct.id);
-    if (deleteError) throw deleteError;
+    await supabase.from('produtos_categorias').delete().eq('produto_id', savedProduct.id);
     
-    // Insere as novas ligações de categorias, se existirem
     if (selectedCategories && selectedCategories.length > 0) {
       const categoryLinks = selectedCategories.map((catId: string) => ({
         produto_id: savedProduct.id,
         categoria_id: catId,
       }));
-
-      const { error: insertError } = await supabase
-        .from('produtos_categorias')
-        .insert(categoryLinks);
+      const { error: insertError } = await supabase.from('produtos_categorias').insert(categoryLinks);
       if (insertError) throw insertError;
     }
     
